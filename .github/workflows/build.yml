@@ -21,11 +21,25 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
-      - name: Run detekt
-        run: |
-          cd Kuroba
-          chmod +x ./gradlew
-          ./gradlew detekt
+      - name: Cache Android SDK
+        id: cache-android
+        uses: actions/cache@v5
+        with:
+          path: /root/.android/sdk
+          key: android
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: build-tools;35.0.0 platforms;android-36 platforms;android-37.0
+          log-accepted-android-sdk-licenses: false
+          cmdline-tools-version: 14742923
+
+#      - name: Run detekt
+#        run: |
+#          cd Kuroba
+#          chmod +x ./gradlew
+#          ./gradlew detekt -Dorg.gradle.jvmargs="-XX:MaxMetaspaceSize=8g"
 
   unit-test:
     runs-on: ubuntu-latest
@@ -41,11 +55,33 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
+      - name: Cache Android SDK
+        id: cache-android
+        uses: actions/cache@v5
+        with:
+          path: /root/.android/sdk
+          key: android
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools build-tools;35.0.0 platforms;android-36 platforms;android-37.0
+          log-accepted-android-sdk-licenses: false
+          cmdline-tools-version: 14742923
+
+      - name: Instal aapt2 for arm64
+        run: |
+          wget https://github.com/SuperJMN/DotnetAndroidArm64Shims/releases/download/36.1.53/shims-linux-arm64-36.1.53.tar.gz
+          tar -xzf shims-linux-arm64-36.1.53.tar.gz
+          chmod +x aapt2
+          mv aapt2 /usr/bin
+          mv libMono.Unix.so libZipSharpNative-3-3.so /usr/lib
+
       - name: Run unit-tests
         run: |
           cd Kuroba
           chmod +x ./gradlew
-          ./gradlew testDebugUnitTest --stacktrace -Dorg.gradle.jvmargs="-Xmx4096m"
+          ./gradlew testDebugUnitTest --stacktrace -Dorg.gradle.jvmargs="-XX:MaxMetaspaceSize=8g"
 
   publish-beta:
     if: github.event_name == 'push'
